@@ -1,12 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Mic, MicOff, X, Sparkles, Volume2, User, Bot, StopCircle } from 'lucide-react';
-from dotenv import load_dotenv
-import os
+import { Bot, X, Volume2, StopCircle, User, Mic, MicOff, Send } from 'lucide-react';
 
-load_dotenv()  # loads .env
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 // Kizuna AI avatar URL
 const AVATAR_URL = "https://img.freepik.com/premium-photo/female-robot-face-artificial-intelligence-concept-isolated-with-white-highlights_660230-176022.jpg"
@@ -31,7 +27,6 @@ export default function QuantumChatbot({ darkMode }) {
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
 
-  const GROQ_API_KEY = GROQ_API_KEY;
   const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
   const SYSTEM_PROMPT = `You are Quantum Assistant, a friendly quantum physics AI assistant with a female voice.

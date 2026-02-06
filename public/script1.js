@@ -639,7 +639,7 @@ async function renderCircuitDiagram(payload) {
   circuitDiv.querySelectorAll("img").forEach((img) => img.remove());
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/circuit", {
+    const res = await fetch("https://qsvm-backend.onrender.com/circuit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -668,7 +668,7 @@ async function renderStateAnalysis(payload) {
   resultsDiv.innerHTML = "<h2>Quantum State Analysis</h2>";
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/state-analysis", {
+    const res = await fetch("https://qsvm-backend.onrender.com/state-analysis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -868,7 +868,7 @@ async function onRun() {
 
   try {
     // ---------- BLOCH ----------
-    const blochRes = await fetch("http://127.0.0.1:8000/bloch", {
+    const blochRes = await fetch("https://qsvm-backend.onrender.com/bloch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -886,7 +886,7 @@ async function onRun() {
     blochWrap.append(blochLabel, blochImg);
 
     // ---------- QSPHERE ----------
-    const qsRes = await fetch("http://127.0.0.1:8000/qsphere", {
+    const qsRes = await fetch("https://qsvm-backend.onrender.com/qsphere", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -910,7 +910,7 @@ async function onRun() {
     container.append(blochWrap, qsWrap);
 
     // ---------- BLOCH ALL QUBITS ----------
-const blochAllRes = await fetch("http://127.0.0.1:8000/bloch-all", {
+const blochAllRes = await fetch("https://qsvm-backend.onrender.com/bloch-all", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(payload),
@@ -955,7 +955,7 @@ container.append(blochAllTitle, blochAllWrap);
 
 
     // ---------- COUNTS HISTOGRAM ----------
-    const countsRes = await fetch("http://127.0.0.1:8000/counts", {
+    const countsRes = await fetch("https://qsvm-backend.onrender.com/counts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -981,7 +981,7 @@ container.append(blochAllTitle, blochAllWrap);
     container.append(countsWrap);
 
     // ---------- HISTOGRAM ----------
-    const histRes = await fetch("http://127.0.0.1:8000/statevectorplot", {
+    const histRes = await fetch("https://qsvm-backend.onrender.com/statevectorplot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1007,7 +1007,7 @@ container.append(blochAllTitle, blochAllWrap);
     img.src = "data:image/png;base64," + histData.image;
 
     //state city
-    const stateRes = await fetch("http://127.0.0.1:8000/statevector", {
+    const stateRes = await fetch("https://qsvm-backend.onrender.com/statevector", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -2127,7 +2127,7 @@ async function backendRunCore() {
     };
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/bloch2", {
+      const response = await fetch("https://qsvm-backend.onrender.com/bloch2", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -2202,7 +2202,7 @@ async function backendRunCore() {
     }
     try {
       // ---------- HISTOGRAM ----------
-      const histRes = await fetch("http://127.0.0.1:8000/histogram", {
+      const histRes = await fetch("https://qsvm-backend.onrender.com/histogram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -2239,7 +2239,7 @@ async function backendRunCore() {
       gates: gateSequence,
     };
 
-    const histRes = await fetch("http://127.0.0.1:8000/histogram", {
+    const histRes = await fetch("https://qsvm-backend.onrender.com/histogram", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
