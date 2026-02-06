@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Quantum Bloch Sphere Visualizer (n ≤ 5)</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- math.js for complex numbers, Plotly for 3D plotting -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@11/lib/browser/math.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+
+<body>
+  <center>
+    <h1>Quantum Bloch Sphere Visualizer</h1>
+    <button id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme" class="theme-toggle">🌙</button>
+  </center>
+  <div class="main">
+    <div class="circuitDisplay">
+
+      <div class="controls">
+        <label>Number of qubits :</label>
+        <input id="numQ" type="number" min="1" value="2" />
+        <button id="btnSet">Set</button>
+        <div class="small note">Basis ordering is |q0 q1 … q(n-1)⟩, where q0 is the leftmost bit.</div>
+
+        <div id="afterSet" class="hidden">
+          <label>Initial basis state:</label>
+          <select id="basisState"></select>
+          <div id="basisInputWrap" class="hidden">
+            <input id="basisInput" type="text" inputmode="numeric" pattern="[0-1]*"
+              placeholder="binary bitstring (e.g., 000...)">
+            <div class="small">Enter a length‑n binary string eg: 00010</div>
+          </div>
+
+          <hr />
+
+          <label>Gate to add:</label>
+          <select id="gateType">
+            <optgroup label="Single-qubit (fixed)">
+              <option value="X">X (Pauli-X)</option>
+              <option value="Y">Y (Pauli-Y)</option>
+              <option value="Z">Z (Pauli-Z)</option>
+              <option value="H">H (Hadamard)</option>
+              <option value="S">S</option>
+              <option value="Sdg">S†</option>
+              <option value="T">T</option>
+              <option value="Tdg">T†</option>
+              <option value="MEASURE">MEASURE</option>
+            </optgroup>
+            <optgroup label="Single-qubit (parameterized)">
+              <option value="Rx">Rx(θ)</option>
+              <option value="Ry">Ry(θ)</option>
+              <option value="Rz">Rz(θ)</option>
+              <option value="Phase">Phase(φ)</option>
+            </optgroup>
+            <optgroup label="Two-qubit">
+              <option value="CNOT">CNOT (control,target)</option>
+              <option value="CZ">CZ (control,target)</option>
+              <option value="SWAP">SWAP (a,b)</option>
+            </optgroup>
+            <optgroup label="Three-qubit">
+              <option value="CCNOT">CCNOT / Toffoli (c1,c2; target)</option>
+            </optgroup>
+            <optgroup label="Custom Gates">
+              <option value="CUSTOM_MATRIX">Custom Matrix Gate</option>
+              <option value="CUSTOM_CIRCUIT">Custom Circuit Gate</option>
+              <option value="CUSTOM_CONTROL">Custom Control Gate</option>
+            </optgroup>
+          </select>
+          <div id="gateHelp" class="small"></div>
+
+          <!-- Single-qubit target -->
+          <div id="singleTargetDiv">
+            <label>Target qubit:</label>
+            <select id="targetQ"></select>
+          </div>
+
+          <!-- Angle for parameterized gates -->
+          <div id="angleDiv" class="hidden">
+            <label><span id="angleLabel">θ (degrees):</span></label>
+            <input id="angleDeg" type="number" step="1" value="90" />
+          </div>
+
+          <!-- CNOT / CZ -->
+          <div id="cnotDiv" class="hidden">
+            <label>Control qubit:</label>
+            <select id="controlQ"></select>
+            <label>Target qubit:</label>
+            <select id="targetQ2"></select>
+          </div>
+
+          <!-- SWAP -->
+          <div id="swapDiv" class="hidden">
+            <label>Qubit A:</label>
+            <select id="swapA"></select>
+            <label>Qubit B:</label>
+            <select id="swapB"></select>
+          </div>
+
+          <!-- Toffoli -->
+          <div id="ccnotDiv" class="hidden">
+            <label>Control 1:</label>
+            <select id="cc_c1"></select>
+            <label>Control 2:</label>
+            <select id="cc_c2"></select>
+            <label>Target:</label>
+            <select id="cc_t"></select>
+          </div>
+
+          <div id="customMatrixDiv" class="hidden">
+          Custom Matrix Gate
+            <label>Gate Name:</label>
+            <input id="customGateName" type="text" placeholder="e.g., MyGate" />
+            <label>Matrix Size:</label>
+            <select id="matrixSize">
+              <option value="2">2x2 (1 qubit)</option>
+              <option value="4">4x4 (2 qubits)</option>
+              <option value="8">8x8 (3 qubits)</option>
+            </select>
+            <label>Matrix (enter complex numbers as a+bi):</label>
+            <label>Target qubit:</label>
+            <select id="controlTarget" class="hidden"></select>
+            <div id="matrixTargets" class="matrix-targets"></div>
+            <div id="matrixInput"></div>
+            <button id="validateMatrix" type="button">Validate Matrix</button>
+            <div id="matrixValidation" class="small"></div>
+          </div> 
+
+          <!-- Custom Circuit Gate -->
+          <div id="customCircuitDiv" class="hidden">
+            <label>Gate Name:</label>
+            <input id="circuitGateName" type="text" placeholder="e.g., MyCircuit" />
+            <label>Number of qubits:</label>
+            <input id="circuitQubits" type="number" min="1" max="5" value="2" />
+            <div id="circuitBuilder">
+              <h4>Build your circuit:</h4>
+              <div id="circuitGatesList"></div>
+              <button id="addCircuitGate" type="button">Add Gate to Circuit</button>
+            </div>
+            <button id="validateCircuit" type="button">Validate Circuit</button>
+            <div id="circuitValidation" class="small"></div>
+          </div>
+
+          <!-- Custom Control Gate -->
+          <div id="customControlDiv" class="hidden">
+            <label>Gate Name:</label>
+            <input id="controlGateName" type="text" placeholder="e.g., MyControlGate" />
+            <label>Base Gate:</label>
+            <select id="baseGate">
+              <option value="X">X (Pauli-X)</option>
+              <option value="Y">Y (Pauli-Y)</option>
+              <option value="Z">Z (Pauli-Z)</option>
+              <option value="H">H (Hadamard)</option>
+              <option value="S">S</option>
+              <option value="T">T</option>
+              <option value="Rx">Rx(θ)</option>
+              <option value="Ry">Ry(θ)</option>
+              <option value="Rz">Rz(θ)</option>
+            </select>
+            <div id="controlAngleDiv" class="hidden">
+              <label>Angle (degrees):</label>
+              <input id="controlAngle" type="number" step="1" value="90" />
+            </div>
+            <label>Control qubits (select multiple):</label>
+            <div id="controlQubitsList"></div>
+            <label>Target qubit:</label>
+            <select id="controlTarget1"></select>
+            <button id="validateControl" type="button">Validate Control Gate</button>
+            <div id="controlValidation" class="small"></div>
+          </div>
+
+          <div class="row gap">
+            <button id="btnAddGate">Add Gate</button>
+            <button id="btnUndo">Undo Last</button>
+            <button id="btnClearGates">Clear Gates</button>
+          </div>
+
+          <div id="gatesList"></div>
+
+          <hr />
+          <div id="customQubitContainer" class="hidden">
+            <label>qubit to:</label>
+            <select id="qubitSelect"></select>
+          </div>
+          <button id="btnRun" onclick="onRun()">Visualize</button>
+          <button id="cRun">Run Circuit</button>
+        </div>
+      </div>
+
+      <hr />
+
+      <canvas id="stateBarChart" class="hidden"></canvas>
+      <div id="resultsGuide" class="small">
+        <strong>&#128161; How to read the results:</strong>
+        <ul>
+          <li>Final state amplitudes show the complex coefficients for each basis state \(|q_0 \dots q_{n-1}\rangle\).
+          </li>
+          <li>The full density matrix ρ captures both probabilities and quantum coherence, while each reduced ρ (per
+            qubit)
+            feeds the Bloch spheres, entropy and purity.</li>
+          <li>The histogram and backend results show classical measurement
+            statistics, and the entanglement summary explains which qubits are entangled.</li>
+        </ul>
+      </div>
+      <div id="results">
+      </div>
+
+      <div id="backendResults" style="white-space: pre-wrap; margin-top: 20px; border: 1px solid #ccc; padding: 10px;">
+      </div>
+
+      <div id="loading" class="loading-spinner" style="display:none;"></div>
+
+    </div>
+    <div class="right-panel">
+      <div id="quantumCircuit" class="grid">
+        <h2>circuit diagram</h2>
+      </div>
+      <div id="qsphereDiv" style="width:600px;height:600px;" class="hidden"></div>
+      <div id="blochSpheres" class="grid"></div>
+      <canvas id="histogram"></canvas>
+    </div>
+  </div>
+  <script src="script1.js">
+  </script>
+</body>
+
+</html>

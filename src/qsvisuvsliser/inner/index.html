@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Quantum Circuit Simulator & Bloch Sphere Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- REMOVED: <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script> -->
+  <!-- math.js for complex numbers, Plotly for 3D plotting -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@11/lib/browser/math.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <!-- Particle Background Canvas -->
+  <canvas id="particleBg"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;"></canvas>
+  <!-- Dark/Light Mode Toggle Button -->
+  <button class="mode-toggle" id="modeToggle" aria-label="Toggle dark mode"
+    style="position:fixed;top:1rem;right:1rem;z-index:1001;">
+    <svg id="sunIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="12" r="5" fill="#facc15" />
+      <g stroke="#facc15" stroke-width="2">
+        <line x1="12" y1="2" x2="12" y2="5" />
+        <line x1="12" y1="19" x2="12" y2="22" />
+        <line x1="2" y1="12" x2="5" y2="12" />
+        <line x1="19" y1="12" x2="22" y2="12" />
+        <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
+        <line x1="17.66" y1="17.66" x2="19.78" y2="19.78" />
+        <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
+        <line x1="17.66" y1="6.34" x2="19.78" y2="4.22" />
+      </g>
+    </svg>
+    <svg id="moonIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79z" fill="#a5b4fc" />
+    </svg>
+  </button>
+
+  <!-- Top Heading and Subtitle -->
+  <div style="width:100%;text-align:center;margin-top:2.5rem;margin-bottom:1.5rem;">
+    <h1
+      style="font-size:2.7rem;font-weight:900;background:linear-gradient(90deg,#6366f1 30%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:transparent;letter-spacing:1px;">
+      Quantum Circuit Simulator & Bloch Sphere Visualizer</h1>
+    <div style="font-size:1.25rem;color:#2563eb;font-weight:500;margin-top:0.5rem;margin-bottom:0.5rem;">
+      Build quantum circuits, visualize multi-qubit states, and explore quantum phenomena in real-time.
+    </div>
+  </div>
+  <div class="main"
+    style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; align-items: flex-start;">
+    <!-- Left Card: Controls + Qubit Info -->
+    <div class="circuitDisplay fade-in" style="flex: 1 1 320px; min-width: 280px; max-width: 600px;">
+      <h1 class="fade-in" id="mainHeading">Quantum Circuit Simulator</h1>
+      <div class="controls">
+        <label>Number of qubits :</label>
+        <input id="numQ" type="number" min="1" max="12" value="2" />
+        <button id="btnSet">Set</button>
+        <div class="small note">Basis ordering is |q0 q1 … q(n-1)⟩, where q0 is the leftmost bit.</div>
+        <div id="afterSet" class="hidden">
+          <label>Initial basis state:</label>
+          <select id="basisState"></select>
+          <hr />
+          <label>Gate to add:</label>
+          <select id="gateType">
+            <optgroup label="Single-qubit (fixed)">
+              <option value="X">X (Pauli-X)</option>
+              <option value="Y">Y (Pauli-Y)</option>
+              <option value="Z">Z (Pauli-Z)</option>
+              <option value="H">H (Hadamard)</option>
+              <option value="S">S</option>
+              <option value="Sdg">S†</option>
+              <option value="T">T</option>
+              <option value="Tdg">T†</option>
+              <option value="MEASURE">MEASURE</option>
+            </optgroup>
+            <optgroup label="Single-qubit (parameterized)">
+              <option value="Rx">Rx(θ)</option>
+              <option value="Ry">Ry(θ)</option>
+              <option value="Rz">Rz(θ)</option>
+              <option value="Phase">Phase(φ)</option>
+            </optgroup>
+            <optgroup label="Two-qubit">
+              <option value="CNOT">CNOT (control,target)</option>
+              <option value="CZ">CZ (control,target)</option>
+              <option value="SWAP">SWAP (a,b)</option>
+            </optgroup>
+            <optgroup label="Three-qubit">
+              <option value="CCNOT">CCNOT / Toffoli (c1,c2; target)</option>
+            </optgroup>
+          </select>
+          <!-- Single-qubit target -->
+          <div id="singleTargetDiv">
+            <label>Target qubit:</label>
+            <select id="targetQ"></select>
+          </div>
+          <!-- Angle for parameterized gates -->
+          <div id="angleDiv" class="hidden">
+            <label><span id="angleLabel">θ (degrees):</span></label>
+            <input id="angleDeg" type="number" step="1" value="90" />
+          </div>
+          <!-- CNOT / CZ -->
+          <div id="cnotDiv" class="hidden">
+            <label>Control qubit:</label>
+            <select id="controlQ"></select>
+            <label>Target qubit:</label>
+            <select id="targetQ2"></select>
+          </div>
+          <!-- SWAP -->
+          <div id="swapDiv" class="hidden">
+            <label>Qubit A:</label>
+            <select id="swapA"></select>
+            <label>Qubit B:</label>
+            <select id="swapB"></select>
+          </div>
+          <!-- Toffoli -->
+          <div id="ccnotDiv" class="hidden">
+            <label>Control 1:</label>
+            <select id="cc_c1"></select>
+            <label>Control 2:</label>
+            <select id="cc_c2"></select>
+            <label>Target:</label>
+            <select id="cc_t"></select>
+          </div>
+          <div class="row gap">
+            <button id="btnAddGate">Add Gate</button>
+            <button id="btnUndo">Undo Last</button>
+            <button id="btnClearGates">Clear Gates</button>
+          </div>
+          <div id="gatesList"></div>
+          <hr />
+          <div id="customQubitContainer" class="hidden">
+            <label>Qubit to analyze:</label>
+            <select id="qubitSelect"></select>
+          </div>
+          <button id="btnRun">Visualize</button>
+          <button id="cRun">Run Circuit</button>
+
+        </div>
+      </div>
+      <hr />
+      <canvas id="stateBarChart" class="hidden"></canvas>
+      <div id="results"></div>
+      <div id="backendResults" style="white-space: pre-wrap; margin-top: 20px; border: 1px solid #ccc; padding: 10px;">
+      </div>
+      <div id="loading" class="loading-spinner" style="display:none;"></div>
+      <!-- Qubit Info Card -->
+      <div class="result-block" style="margin-top:2rem;">
+        <h2>Quantum State Analysis</h2>
+        <p>This simulator provides real-time visualization of quantum states, including:</p>
+        <ul>
+          <li><strong>State Vector:</strong> Complete quantum state amplitudes</li>
+          <li><strong>Density Matrices:</strong> Full and reduced density operators</li>
+          <li><strong>Bloch Spheres:</strong> 3D visualization of single-qubit states</li>
+          <li><strong>Entropy & Purity:</strong> Quantum information metrics</li>
+          <li><strong>Measurement Statistics:</strong> Probability distributions</li>
+        </ul>
+      </div>
+    </div>
+    <!-- Right Card: Circuit Diagram + Outputs -->
+    <div class="right-panel" style="flex: 1 1 320px; min-width: 280px; max-width: 600px;">
+      <div id="quantumCircuit" class="grid slide-up">
+        <h2>Circuit Diagram</h2>
+      </div>
+      <div id="qsphereDiv" style="width:600px;height:600px;" class="hidden"></div>
+      <div id="blochSpheres" class="grid"></div>
+      <!-- Per-qubit properties summary (placed above the measurement histogram) -->
+      <div id="qubitPropertiesSummary" style="margin-bottom: 1rem;"></div>
+      <canvas id="histogram"></canvas>
+      <!-- Advanced Results Display -->
+      <div id="advancedResults" class="result-block" style="margin-top: 2rem; display: none;">
+        <h2>Quantum State Analysis</h2>
+        <div id="stateAnalysis"></div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+  <script>
+    // Particle background animation
+    const canvas = document.getElementById('particleBg');
+    const ctx = canvas.getContext('2d');
+    let W = window.innerWidth, H = window.innerHeight;
+    function resizeCanvas() {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Quantum theme colors
+    function getColors() {
+      return document.body.classList.contains('dark-mode')
+        ? ["#06b6d4", "#0891b2", "#0ea5a4"]
+        : ["#8b5cf6", "#c084fc", "#a78bfa"];
+    }
+
+    // Particle system
+    const NUM = 50;
+    let particles = Array.from({ length: NUM }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 1.2,
+      vy: (Math.random() - 0.5) * 1.2,
+      r: Math.random() * 3 + 1.5,
+      color: getColors()[Math.floor(Math.random() * 3)]
+    }));
+
+    function updateParticles() {
+      for (let p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+      }
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, W, H);
+      // Draw lines between close particles
+      for (let i = 0; i < NUM; ++i) {
+        for (let j = i + 1; j < NUM; ++j) {
+          const a = particles[i], b = particles[j];
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist < 120) {
+            ctx.save();
+            ctx.globalAlpha = 0.18;
+            ctx.strokeStyle = a.color;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
+      // Draw particles
+      for (let p of particles) {
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function animate() {
+      updateParticles();
+      drawParticles();
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Update colors on theme change
+    function updateColors() {
+      const colors = getColors();
+      for (let p of particles) {
+        p.color = colors[Math.floor(Math.random() * 3)];
+      }
+    }
+
+    // Theme toggle functionality
+    const modeToggle = document.getElementById('modeToggle');
+    const sunIcon = document.getElementById('sunIcon');
+    const moonIcon = document.getElementById('moonIcon');
+
+    function setMode(mode) {
+      document.body.className = mode + '-mode';
+      if (mode === 'dark') {
+        if (sunIcon) sunIcon.style.display = 'none';
+        if (moonIcon) moonIcon.style.display = '';
+        const heading = document.getElementById('mainHeading');
+        if (heading) {
+          heading.style.background = 'linear-gradient(90deg, #a5b4fc 30%, #67e8f9 100%)';
+          heading.style.webkitBackgroundClip = 'text';
+          heading.style.backgroundClip = 'text';
+          heading.style.color = 'transparent';
+          heading.style.webkitTextFillColor = 'transparent';
+        }
+      } else {
+        if (sunIcon) sunIcon.style.display = '';
+        if (moonIcon) moonIcon.style.display = 'none';
+        const heading = document.getElementById('mainHeading');
+        if (heading) {
+          heading.style.background = 'linear-gradient(90deg, #6366f1 30%, #06b6d4 100%)';
+          heading.style.webkitBackgroundClip = 'text';
+          heading.style.backgroundClip = 'text';
+          heading.style.color = 'transparent';
+          heading.style.webkitTextFillColor = 'transparent';
+        }
+      }
+      localStorage.setItem('theme', mode);
+      updateColors();
+    }
+
+    if (modeToggle) {
+      modeToggle.addEventListener('click', () => {
+        const isDark = document.body.classList.contains('dark-mode');
+        setMode(isDark ? 'light' : 'dark');
+      });
+    }
+
+    // On load, set mode from localStorage or system preference
+    (function () {
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        setMode(saved);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setMode('dark');
+      } else {
+        setMode('light');
+      }
+    })();
+
+    // Also update on system preference change
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        if (!localStorage.getItem('theme')) {
+          setMode(e.matches ? 'dark' : 'light');
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
